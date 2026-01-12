@@ -1,7 +1,6 @@
 # media_platform/weixin/search.py
 
 import re
-import base64
 import requests
 from urllib.parse import urlparse, parse_qs, unquote
 from typing import List
@@ -14,16 +13,19 @@ class BingWeChatSearcher:
 
     BASE_URL = "https://www.bing.com/search"
 
-    def __init__(self, headers: dict, timeout: int = 15):
-        self.headers = headers
+    def __init__(self, headers: dict | None = None, timeout: int = 15):
+        self.headers = headers or {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0.0.0 Safari/537.36"
+            )
+        }
         self.timeout = timeout
 
     def search(self, keyword: str, page: int) -> List[str]:
-        """
-        搜索指定关键词的一页结果
-        """
         params = {
-            "q": f"site:mp.weixin.qq.com/s {keyword}",
+            "q": f"site:mp.weixin.qq.com {keyword}",
             "first": page * 10 + 1,
         }
 
@@ -38,10 +40,9 @@ class BingWeChatSearcher:
             return []
 
         html = resp.text
+        results: List[str] = []
 
-        urls: List[str] = []
-
-        # 1️⃣ 找到 Bing 的跳转链接
+        # 1️⃣ 抓 Bing 跳转链接
         for href in re.findall(r'href="(https://www\.bing\.com/ck/a\?[^"]+)"', html):
             try:
                 parsed = urlparse(href)
@@ -50,18 +51,14 @@ class BingWeChatSearcher:
                 if "u" not in qs:
                     continue
 
-                # 2️⃣ Base64 解码真实 URL
-                encoded = qs["u"][0]
-                decoded = base64.b64decode(encoded).decode("utf-8", errors="ignore")
+                real_url = unquote(qs["u"][0])
 
-                decoded = unquote(decoded)
-
-                # 3️⃣ 过滤公众号文章
-                if decoded.startswith("https://mp.weixin.qq.com/s/"):
-                    urls.append(decoded)
+                # 2️⃣ 判断是否为公众号文章
+                if "mp.weixin.qq.com/s" in real_url:
+                    results.append(real_url)
 
             except Exception:
                 continue
 
-        # 去重
-        return list(dict.fromkeys(urls))
+        # 去重，保持顺序
+        return list(dict.fromkeys(results))
