@@ -17,6 +17,8 @@
 # 详细许可条款请参阅项目根目录下的LICENSE文件。
 # 使用本代码即表示您同意遵守上述原则和LICENSE中的所有条款。
 
+# media_platform/weixin/__init__.py
 
-from .core import XiaoHongShuCrawler
-from .field import *
+from .wechat_crawler import WeChatCrawler
+
+__all__ = ["WeChatCrawler"]
