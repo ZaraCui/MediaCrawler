@@ -61,4 +61,6 @@ class BingWeChatSearcher:
                 continue
 
         # 去重，保持顺序
+        print(f"[DEBUG] Found {len(results)} urls")
         return list(dict.fromkeys(results))
+

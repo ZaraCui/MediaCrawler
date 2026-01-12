@@ -1,8 +1,10 @@
 # media_platform/weixin/wechat_crawler.py
 
 import asyncio
+import json
+import os
 import random
-import logging
+import time
 
 import config
 from base.base_crawler import AbstractCrawler
@@ -11,84 +13,54 @@ from media_platform.weixin.search import BingWeChatSearcher
 
 class WeChatCrawler(AbstractCrawler):
     """
-    微信公众号爬虫（基于搜索引擎，不使用平台内部 API）
+    微信公众号爬虫（基于 Bing 搜索）
     """
 
     def __init__(self):
-        super().__init__()
-
-        # logger 由子类显式负责
-        self.logger = logging.getLogger("WeChatCrawler")
-
-        # headers 由子类显式负责（不走浏览器）
-        self.headers = {
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0.0.0 Safari/537.36"
-            ),
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "zh-CN,zh;q=0.9",
-        }
-
-    # =========================================================
-    # 必须实现的 abstract methods（即使不用）
-    # =========================================================
-
-    async def launch_browser(self):
-        """
-        WeChat crawler does NOT require browser.
-        This method is implemented only to satisfy AbstractCrawler.
-        """
-        self.logger.debug("[WeChat] launch_browser skipped (not required)")
-        return None
-
-    async def search(self):
-        """
-        WeChat crawler does NOT use platform search.
-        Actual crawling logic is in start().
-        """
-        self.logger.debug("[WeChat] search skipped (not required)")
-        return None
-
-    # =========================================================
-    # 实际业务逻辑
-    # =========================================================
+        self.results = []
 
     async def start(self):
-        if not getattr(config, "ENABLE_WECHAT", False):
-            self.logger.info("[WeChat] Crawler disabled by config")
+        if not config.ENABLE_WECHAT:
+            print("[WeChat] Crawler disabled by config")
             return
 
-        self.logger.info("[WeChat] Crawler started")
+        print("[WeChat] Crawler started")
 
-        searcher = BingWeChatSearcher(headers=self.headers)
+        searcher = BingWeChatSearcher()
 
         for account in config.WECHAT_ACCOUNTS:
-            await self._crawl_account(searcher, account)
-            await asyncio.sleep(
-                random.uniform(*config.WECHAT_ACCOUNT_DELAY)
-            )
+            print(f"[WeChat] Crawling account: {account}")
 
-        self.logger.info("[WeChat] Crawler finished")
+            for page in range(config.WECHAT_MAX_PAGE):
+                urls = searcher.search(account, page)
 
-    async def _crawl_account(self, searcher: BingWeChatSearcher, account: str):
-        self.logger.info(f"[WeChat] Crawling account: {account}")
+                for url in urls:
+                    print("FOUND:", account, url)
+                    self.results.append({
+                        "platform": "wechat",
+                        "account": account,
+                        "url": url,
+                    })
 
-        for page in range(config.WECHAT_MAX_PAGE):
-            urls = searcher.search(account, page)
-        
-            for url in urls:
-                print(">>> SAVE_ITEM CALLED:", account, url)
-                
-                await self.save_item({
-                    "platform": "xhs",          # 复用已注册平台
-                    "source_platform": "wechat",
-                    "account": account,
-                    "url": url,
-                })
+                await asyncio.sleep(random.uniform(*config.WECHAT_REQUEST_DELAY))
 
+            await asyncio.sleep(random.uniform(*config.WECHAT_ACCOUNT_DELAY))
 
-            await asyncio.sleep(
-                random.uniform(*config.WECHAT_REQUEST_DELAY)
-            )
+        self._save_json()
+
+    def _save_json(self):
+        os.makedirs("data/wechat", exist_ok=True)
+
+        filename = f"data/wechat/wechat_search_{time.strftime('%Y%m%d_%H%M%S')}.json"
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(self.results, f, ensure_ascii=False, indent=2)
+
+        print(f"[WeChat] Saved {len(self.results)} items to {filename}")
+
+    # ====== 为了满足 AbstractCrawler，不用但必须写 ======
+
+    async def search(self):
+        pass
+
+    async def launch_browser(self, *args, **kwargs):
+        raise NotImplementedError("WeChat crawler does not use browser")
