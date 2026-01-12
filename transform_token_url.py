@@ -205,7 +205,7 @@ if __name__ == "__main__":
     parser = WeixinUrlParser()
     
     # 1. 构造完整的搜狗跳转链接（使用你的Token）
-    YOUR_TOKEN = "dn9a_-gY295K0Rci_xozVXfdMkSQTLW6cwJThYulHEtVjXrGTiVgS0m-TnK4-KjtO0gWzQox3NsglOopRc3FnFqXa8Fplpd9oQZZRR57sSpEMpZVW7oghZ4ypoyXlacKdEVhIAVFx_kHqy9FKDyWS2qxtS0M8MuLQP88_J8L207rOTiKUuYscoo3ARA55wBvZfKQuZdSLGnXsysS7ODuv3aNpklcctaajH7owij-tGclngvSEP92b3ZgBKswuJYfE-unwx8u_-fm0CtGSSkZQQ"
+    YOUR_TOKEN = "dn9a_-gY295K0Rci_xozVXfdMkSQTLW6cwJThYulHEtVjXrGTiVgS6OZocm_zbFRkjNXDo_uSGAglOopRc3FnFqXa8Fplpd9KUDhGrmnMxFDervkPT75uYAroSq-pKZKF2ebcQCj-3hbjvQf4RSlFHUycpHZF7U851YDus3pVaO7W928yfs-C3_Yg_J_gYOhfzHsZAYekAu9jSwKaDxp79TSQtyenPP2HYbmCQw7v81iynmULkbBHu-WVN--SdwTuaoqfo7KmcN6VKrzu_4XKA"
     content_url = f"https://weixin.sogou.com/link?url={YOUR_TOKEN}"
     print(f"构造的搜狗链接: {content_url}")
     
