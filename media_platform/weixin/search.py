@@ -2,35 +2,38 @@
 
 import re
 import requests
-from urllib.parse import urlparse, parse_qs, unquote
 from typing import List
 
 
-class BingWeChatSearcher:
+class SogouWeChatSearcher:
     """
-    使用 Bing 搜索微信公众号文章（解析 ck/a 跳转链接）
+    使用 Sogou 微信搜索
+    仅提取文章 token（不访问 /link，避免反爬）
     """
 
-    BASE_URL = "https://www.bing.com/search"
+    SEARCH_URL = "https://weixin.sogou.com/weixin"
 
-    def __init__(self, headers: dict | None = None, timeout: int = 15):
-        self.headers = headers or {
+    def __init__(self, timeout: int = 15):
+        self.timeout = timeout
+        self.headers = {
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
                 "AppleWebKit/537.36 (KHTML, like Gecko) "
                 "Chrome/120.0.0.0 Safari/537.36"
-            )
+            ),
+            "Accept-Language": "zh-CN,zh;q=0.9",
+            "Referer": "https://weixin.sogou.com/",
         }
-        self.timeout = timeout
 
     def search(self, keyword: str, page: int) -> List[str]:
         params = {
-            "q": f"site:mp.weixin.qq.com {keyword}",
-            "first": page * 10 + 1,
+            "type": 2,          # 2 = 文章
+            "query": keyword,
+            "page": page + 1,
         }
 
         resp = requests.get(
-            self.BASE_URL,
+            self.SEARCH_URL,
             params=params,
             headers=self.headers,
             timeout=self.timeout,
@@ -40,27 +43,14 @@ class BingWeChatSearcher:
             return []
 
         html = resp.text
-        results: List[str] = []
 
-        # 1️⃣ 抓 Bing 跳转链接
-        for href in re.findall(r'href="(https://www\.bing\.com/ck/a\?[^"]+)"', html):
-            try:
-                parsed = urlparse(href)
-                qs = parse_qs(parsed.query)
+        # ✅ 只抓 token，不请求 /link
+        tokens = re.findall(
+            r'/link\?url=([a-zA-Z0-9_-]+)',
+            html,
+        )
 
-                if "u" not in qs:
-                    continue
+        print(f"[DEBUG] Found {len(tokens)} sogou tokens")
 
-                real_url = unquote(qs["u"][0])
-
-                # 2️⃣ 判断是否为公众号文章
-                if "mp.weixin.qq.com/s" in real_url:
-                    results.append(real_url)
-
-            except Exception:
-                continue
-
-        # 去重，保持顺序
-        print(f"[DEBUG] Found {len(results)} urls")
-        return list(dict.fromkeys(results))
-
+        # 去重
+        return list(dict.fromkeys(tokens))
