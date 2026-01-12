@@ -80,10 +80,12 @@ class WeChatCrawler(AbstractCrawler):
 
             for url in urls:
                 await self.save_item({
-                    "platform": "wechat",
+                    "platform": "xhs",          # 复用已注册平台
+                    "source_platform": "wechat",
                     "account": account,
                     "url": url,
                 })
+
 
             await asyncio.sleep(
                 random.uniform(*config.WECHAT_REQUEST_DELAY)
