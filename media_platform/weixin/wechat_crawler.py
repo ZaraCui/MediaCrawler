@@ -77,8 +77,10 @@ class WeChatCrawler(AbstractCrawler):
 
         for page in range(config.WECHAT_MAX_PAGE):
             urls = searcher.search(account, page)
-
+        
             for url in urls:
+                print(">>> SAVE_ITEM CALLED:", account, url)
+                
                 await self.save_item({
                     "platform": "xhs",          # 复用已注册平台
                     "source_platform": "wechat",
