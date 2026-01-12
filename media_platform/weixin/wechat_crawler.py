@@ -11,16 +11,16 @@ from media_platform.weixin.search import BingWeChatSearcher
 
 class WeChatCrawler(AbstractCrawler):
     """
-    微信公众号爬虫（基于搜索引擎，如 Bing）
+    微信公众号爬虫（基于搜索引擎，不使用平台内部 API）
     """
 
     def __init__(self):
         super().__init__()
 
-        # 显式初始化 logger（AbstractCrawler 不保证有）
+        # logger 由子类显式负责
         self.logger = logging.getLogger("WeChatCrawler")
 
-        # 显式初始化 headers（因为不走浏览器流程）
+        # headers 由子类显式负责（不走浏览器）
         self.headers = {
             "User-Agent": (
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -30,6 +30,30 @@ class WeChatCrawler(AbstractCrawler):
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "zh-CN,zh;q=0.9",
         }
+
+    # =========================================================
+    # 必须实现的 abstract methods（即使不用）
+    # =========================================================
+
+    async def launch_browser(self):
+        """
+        WeChat crawler does NOT require browser.
+        This method is implemented only to satisfy AbstractCrawler.
+        """
+        self.logger.debug("[WeChat] launch_browser skipped (not required)")
+        return None
+
+    async def search(self):
+        """
+        WeChat crawler does NOT use platform search.
+        Actual crawling logic is in start().
+        """
+        self.logger.debug("[WeChat] search skipped (not required)")
+        return None
+
+    # =========================================================
+    # 实际业务逻辑
+    # =========================================================
 
     async def start(self):
         if not getattr(config, "ENABLE_WECHAT", False):
